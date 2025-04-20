@@ -1,0 +1,28 @@
+@startuml To-Be Architecture (MVP)
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
+
+Person(patient, "Пациент", "Регистрируется, записывается на приём")
+Person(doctor, "Врач", "Просматривает записи, диагнозы")
+Person(reception, "Ресепшен", "Управляет записями")
+
+System_Boundary(medikamente, "Система 'Медикаменте'") {
+    Container(portal, "Клиентский портал", "React", "WEB-интерфейс для пациентов")
+    Container(api, "API Gateway", "Kong", "Аутентификация, маршрутизация")
+    Container(auth, "Сервис авторизации", "Keycloak", "RBAC, OAuth 2.0")
+    Container(db, "База данных", "PostgreSQL", "Хранение персональных и медицинских данных")
+    Container(analytics, "Сервис аналитики", "Python", "BI-отчёты")
+    Container(payment, "Платёжный шлюз", "1С + Тинькофф API", "Обработка платежей")
+    Container(lab, "Интеграция с лабораторией", "REST API", "Обмен данными анализов")
+}
+
+patient --> portal : HTTPS + JWT\n(ФИО, телефон)
+portal --> api : TLS 1.3\n(запросы)
+api --> auth : Проверка JWT
+api --> db : Шифрование (AES-256)\n(PII данные)
+db --> analytics : Обезличенные данные\n(для отчётов)
+api --> lab : Mutual TLS\n(направления/анализы)
+api --> payment : PCI DSS\n(платежи)
+reception --> portal : RBAC\n(управление записями)
+doctor --> db : ABAC\n(доступ к диагнозам)
+
+@enduml
