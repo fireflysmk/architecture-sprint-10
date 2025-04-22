@@ -1,0 +1,27 @@
+===================================
+  План улучшений
+===================================
+
+защита данных:
+
+1. Персональные данные: 
+ - Шифрование (AES-256), Azure SQL Always Encrypted
+
+2. Медицинские записи:
+Тегирование + DLP, Microsoft Purview
+
+3. Платежи:
+PCI DSS + токенизация,	Stripe
+
+4. API лаборатории:
+OAuth 2.0 + JWT	API Gateway
+
+
+
+Механизм тегирования:
+Метки:
+- PUBLIC, INTERNAL, CONFIDENTIAL, PII
+
+Инструменты:
+- Azure Information Protection для автоматической классификации
+- Политики DLP в Microsoft 365
