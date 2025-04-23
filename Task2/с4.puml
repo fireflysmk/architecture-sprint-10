@@ -9,24 +9,34 @@ Person(reception, "Ресепшен", "Управление записями")
 
 System_Boundary(medikamente, "Ядро системы") {
   Container(portal, "Клиентский портал", "React", "Хранение: Сессии в Redis\nЗащита: HTTPS + JWT")
-  Container(api, "API Gateway", "Kong", "Аутентификация: OAuth 2.0\nAudit: Логи в ELK")
+  Container(api_gw, "API Gateway", "Kong", "Маршрутизация, ограничение скорости\nЗащита: WAF, DDoS")
+  
+  Container(auth, "Сервис авторизации", "Keycloak", "OAuth 2.0, RBAC роли\nMFA для врачей")
+  Container(patient_svc, "Сервис пациентов", "Java/Spring", "Валидация PII\nЛогика записей")
+  Container(medical_svc, "Мед. сервис", "Python", "Управление медкартами\nABAC политики")
+  
   Container(db, "База данных", "PostgreSQL", "Шифрование: AES-256 (PII)\nУдаление: Через 5 лет (ФЗ-152)")
   Container(payment, "Платёжный шлюз", "1С + Тинькофф API", "Стандарт: PCI DSS")
   Container(lab, "Интеграция с лабораторией", "REST API", "Защита: mTLS\nДанные: Только свои анализы")
 }
 
+' Потоки данных
 Rel(patient, portal, "1. HTTPS + JWT (ФИО, телефон)", "HTTPS")
-Rel(portal, api, "2. TLS 1.3 (запросы)", "TLS")
-Rel(api, db, "3. Шифрование полей (PII)", "AES-256")
-Rel(db, doctor, "4. ABAC (доступ только к своим пациентам)", "ABAC")
-Rel(api, lab, "5. mTLS + теги DLP (направления/анализы)", "mTLS")
-Rel(api, payment, "6. Токенизация карт (PCI DSS)", "PCI")
-Rel(reception, portal, "7. RBAC (роли: запись/отмена)", "RBAC")
+Rel(portal, api_gw, "2. TLS 1.3 (запросы)", "TLS")
+Rel(api_gw, auth, "3. Проверка токена", "OAuth2")
+Rel(api_gw, patient_svc, "4. Запросы пациентов", "JSON")
+Rel(patient_svc, db, "5. Шифрование PII", "AES-256")
+Rel(api_gw, medical_svc, "6. Запросы медкарт", "JSON")
+Rel(medical_svc, db, "7. ABAC контроль", "SQL")
+Rel(medical_svc, lab, "8. mTLS + DLP", "HL7/FHIR")
+Rel(patient_svc, payment, "9. Токенизация", "PCI DSS")
+Rel(doctor, medical_svc, "10. Доступ к данным", "ABAC")
+Rel(reception, patient_svc, "11. Управление записями", "RBAC")
 
 legend right
   <b>Меры Data Privacy:</b>
   ====
-  <color:#0000FF>Шифрование:  AES-256 (БД), TLS 1.3 (трафик)</color>
+  <color:#0000FF>Шифрование: AES-256 (БД), TLS 1.3 (трафик)</color>
   <color:#006400>Контроль доступа: RBAC (роли) + ABAC (атрибуты)</color>
   <color:#8B0000>Сроки хранения: 5 лет для PII (ФЗ-152)</color>
   <color:#FF8C00>Тегирование: DLP для CONFIDENTIAL</color>
